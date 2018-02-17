@@ -69,9 +69,6 @@ class MenuScreen(Screen):
                     if i != p:
                         Ellipse(pos=(Window.size[0]/2 + 20*i - 48, 10), size=(16, 16))  # -48,-28,-8,3,8
 
-    def tran_draw(self):
-        pass
-
     def update(self, new_input, input_list):
         screen_list = ['relay', 'weather', 'Label 3', 'Label 4', 'Label 5']
         # p is the name of the current icon, passed to main if selected

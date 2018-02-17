@@ -15,94 +15,82 @@ from screens.weather_screen import WeatherScreen
 import os
 os.environ['KIVY_WINDOW'] = 'egl_rpi'
 
-Window.show_cursor = True
+#uncomment for cursor
+# Window.show_cursor = True
 
-def chuck_decode():
+
+def input_decode(read_x, read_y, read_c, read_z):
     # use the working code on the raspberry pi
     # make sure to import the bluetooth library, and add socket and bluetooth information in the app build function
-    global chuk_x
-    global chuk_y
-    global chuk_c
-    global chuk_z
-    global chuk_read_x
-    global chuk_read_y
-    global chuk_read_c
-    global chuk_read_z
+    global in_x
+    global in_y
+    global in_a
+    global in_b
 
     input_list = [0, 0, 0, 0]  # Used to inform other function of what readings changed
 
-    chuk_read_x = 0
-    chuk_read_y = 0
-    chuk_read_c = 0
-    chuk_read_z = 0
-
-    if chuk_x != chuk_read_x:
-        input_list[0] = chuk_read_x
-    if chuk_y != chuk_read_y:
-        input_list[1] = chuk_read_y
-    if chuk_c != chuk_read_c:
-        input_list[2] = chuk_read_c
-    if chuk_z != chuk_read_z:
-        input_list[3] = chuk_read_z
-    if input_list == [0, 0, 0, 0]:
-        chuk_x = chuk_read_x
-        chuk_y = chuk_read_y
-        chuk_c = chuk_read_c
-        chuk_z = chuk_read_z
-
-        return False, input_list
-
-    chuk_x = chuk_read_x
-    chuk_y = chuk_read_y
-    chuk_c = chuk_read_c
-    chuk_z = chuk_read_z
-
-    return True, input_list
-
-
-def dev_chuck_decode(read_x, read_y, read_c, read_z):
-    # use the working code on the raspberry pi
-    # make sure to import the bluetooth library, and add socket and bluetooth information in the app build function
-    global chuk_x
-    global chuk_y
-    global chuk_c
-    global chuk_z
-
-    input_list = [0, 0, 0, 0]  # Used to inform other function of what readings changed
-
-    if chuk_x != read_x:
+    if in_x != read_x:
         input_list[0] = read_x
-    if chuk_y != read_y:
+    if in_y != read_y:
         input_list[1] = read_y
-    if chuk_c != read_c:
+    if in_a != read_c:
         input_list[2] = read_c
-    if chuk_z != read_z:
+    if in_b != read_z:
         input_list[3] = read_z
     if input_list == [0, 0, 0, 0]:
-        chuk_x = read_x
-        chuk_y = read_y
-        chuk_c = read_c
-        chuk_z = read_z
+        in_x = read_x
+        in_y = read_y
+        in_a = read_c
+        in_b = read_z
 
         return False, input_list
 
-    chuk_x = read_x
-    chuk_y = read_y
-    chuk_c = read_c
-    chuk_z = read_z
+    in_x = read_x
+    in_y = read_y
+    in_a = read_c
+    in_b = read_z
 
-    return True, input_list
+    return True, input_list #add relay controller below this
 
+class Mirage_RelayController:
+    tv_pin = ''
+    pin_list = [tv_pin]
+    relay_state_list = ['ON']
+
+    ON = 0
+    OFF = 1  # for some reason relay is backwards, ON or 1 means OFF
+
+    def __init__(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.tv_pin, GPIO.OUT)
+
+    def toggle(self):
+        if self.relay_state_list[0] == 'OFF':
+            self.relay_state_list[0] = 'ON'
+            GPIO.output(self.pin_list[0], self.ON)
+            print('TV ON')
+            return 'ON'
+        if self.relay_state_list[0] == 'ON':
+            self.relay_state_list[0] = 'OFF'
+            GPIO.output(self.pin_list[0], self.OFF)
+            print('TV OFF')
+            return 'OFF'
 
 class MirageClass(Widget):
 
-    chuk_read_x = 0
-    chuk_read_y = 0
-    chuk_read_c = 0
-    chuk_read_z = 0
+    read_x = 0 # change var names
+    read_y = 0
+    read_a = 0
+    read_b = 0
 
     post_update_data = []
+    transition = False
+    next_screen = ''
 
+    sleep = False
+    sleep_timer = 0
+
+    rc = Mirage_RelayController()
     ###################################################################################################################
 
     # Keyboard Reader code, used to test screen development
@@ -119,58 +107,84 @@ class MirageClass(Widget):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] == 'w':
-            self.chuk_read_y = 1
+            self.read_y = 1
         elif keycode[1] == 's':
-            self.chuk_read_y = -1
+            self.read_y = -1
         elif keycode[1] == 'd':
-            self.chuk_read_x = 1
+            self.read_x = 1
         elif keycode[1] == 'a':
-            self.chuk_read_x = -1
+            self.read_x = -1
         elif keycode[1] == 'f':
-            self.chuk_read_c = 1
+            self.read_a = 1
         elif keycode[1] == 'g':
-            self.chuk_read_z = 1
+            self.read_b = 1
         return True
 
     def read_input(self):
         f = open('input.txt','r+')
         r = str(f.read())
         if r != '':
-	   data = r[0]
-	   if data == 'w':
-	      self.chuk_read_y = 1
-	   if data == 's':
-	      self.chuk_read_y = -1
-	   if data == 'd':
-	      self.chuk_read_x = 1
-	   if data == 'a':
-	      self.chuk_read_x = -1
-           if data == 'f':
-	      self.chuk_read_c = 1
-	   if data == 'g':
-	      self.chuk_read_z = 1
-	f.close()
-	open('input.txt', 'w').close()
-    ###################################################################################################################
+            data = r[0]
+            if data == 'w':
+                self.read_y = 1
+            if data == 's':
+                 self.read_y = -1
+            if data == 'd':
+                self.read_x = 1
+            if data == 'a':
+                self.read_x = -1
+            if data == 'f':
+                self.read_a = 1
+            if data == 'g':
+                self.read_b = 1
+        f.close()
+        open('input.txt', 'w').close()
+
+###################################################################################################################
 
     def mirage_update(self, dt):
-        # real chuk_decode function uncomment for final program
-        # new_input, input_list = chuck_decode()
+        # The mirage_update function is the main loop of the entire GUI
+        #
+        # This function has three critical responsibilities
+        # 1) Receive input from the custom controller or keyboard (used for testing purposes)
+        # 2) Call and send inputs to the update function of the current screen
+        # 3) Transition to other screens
 
-        # dev chuck decode works with the keyboard reader
         self.read_input()
-        new_input, input_list = dev_chuck_decode(self.chuk_read_x, self.chuk_read_y, self.chuk_read_c, self.chuk_read_z)
-        self.post_update_data = sm.current_screen.update(new_input, input_list)
+        new_input, input_list = input_decode(self.read_x, self.read_y, self.read_a, self.read_b)
 
-        # print(self.post_update_data)
-        if self.post_update_data[0] == 1:
-            print(self.post_update_data[1])
-            sm.current = self.post_update_data[1]
+        if new_input:
+            self.sleep_timer = 0
+            if self.sleep:
+                self.rc.toggle()
+            self.sleep = False
+        if self.sleep_timer > 100:
+            if not self.sleep:
+                self.rc.toggle()
+            self.sleep = True
+            # print('sleep')
 
-        self.chuk_read_x = 0
-        self.chuk_read_y = 0
-        self.chuk_read_c = 0
-        self.chuk_read_z = 0
+        else:
+            # Call current screens update function // new_input = True / False, input_list = [0, 0, 0, 0]
+            # post_update_data = [boolean for transition, desired screen(same screen if first arg is false]
+            self.post_update_data = sm.current_screen.update(new_input, input_list)
+
+            if self.transition:  # Changes the current screen, prep is required for transition to be True
+                sm.current = self.next_screen
+                self.transition = False
+            elif self.post_update_data[0] == 1:  # if new screen was selected in current_screen update
+                self.transition = True
+                self.next_screen = self.post_update_data[1]
+                i = sm.screen_names.index(self.next_screen)  # gets index of new screen from screen manager list
+                print('call next screen load')
+                sm.screens[i].update(False, [0, 0, 0, 0])  # preps/updates new screen without setting it to current, 'Loading'
+
+            self.sleep_timer += 1
+
+        self.read_x = 0
+        self.read_y = 0
+        self.read_a = 0
+        self.read_b = 0
 
 
 sm = ScreenManager(transition=NoTransition())
@@ -192,14 +206,14 @@ class DisplayApp(App):
         # make the clock and general update, then remove the updates from the screens <-----------------------
         return sm
 
-chuk_x = 0  # global nunchuk variables
-chuk_y = 0
-chuk_c = 0
-chuk_z = 0
-chuk_read_x = 0
-chuk_read_y = 0
-chuk_read_c = 0
-chuk_read_z = 0
+in_x = 0  # global nunchuk variables
+in_y = 0
+in_a = 0
+in_b = 0
+read_x = 0
+read_y = 0
+read_a = 0
+read_b = 0
 
 if __name__ == '__main__':
     DisplayApp().run()

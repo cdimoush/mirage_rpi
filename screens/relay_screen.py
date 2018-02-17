@@ -13,7 +13,7 @@ class RelayController:
     green_pin = 26
     # blue_pin = fill this in
 
-    pin_list = [amp_pin, lamp_pin, fan_pin, red_pin, green_pin, 'blue_pin']  # add blue pin
+    pin_list = [amp_pin, tree_pin, fan_pin, red_pin, green_pin, 'blue_pin']  # add blue pin
     relay_state_list = ['OFF', 'OFF', 'OFF', 'OFF', 'OFF', 'OFF']
 
     ON = 0
@@ -23,15 +23,12 @@ class RelayController:
         # super(class, self).__init__()
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.amp_pin, GPIO.OUT)  # controls 1st relay
-        GPIO.setup(self.lamp_pin, GPIO.OUT)  # controls 4th relay (second relay appears broken)
+        GPIO.setup(self.tree_pin, GPIO.OUT)  # controls 4th relay (second relay appears broken)
         GPIO.setup(self.fan_pin, GPIO.OUT)  # controls 3rd relay
         GPIO.setup(self.red_pin, GPIO.OUT)  # controls 5th relay
         GPIO.setup(self.green_pin, GPIO.OUT)  # controls 6th relay
         #GPIO.setup(self.blue_pin, GPIO.OUT)  # controls 7th relay
-        
 
-    def toggle(self, channel):
-        GPIO.output(red_pin, OFF)
 
     def toggle(self, pin):
         if self.relay_state_list[pin] == 'OFF':
@@ -50,7 +47,7 @@ class RelayScreen(Screen):
     rows = 6
     cursor_x = 0
 
-    label_list = ['Amplifier', 'Lamp', 'Fan', 'Red', 'Green', 'Blue']
+    label_list = ['Amplifier', 'Tree', 'Fan', 'Red', 'Green', 'Blue']
     relay_state_list = ['OFF', 'OFF', 'OFF', 'OFF', 'OFF', 'OFF']
 
     rc = RelayController()

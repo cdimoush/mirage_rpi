@@ -14,6 +14,7 @@ class WeatherScreen(Screen):
     new_screen = True
     call_draw = True
     logged_data = False
+    error = False
 
     for_data = ''
     current_data = ''
@@ -105,85 +106,92 @@ class WeatherScreen(Screen):
             Color(1, 1, 1)
 
     def get_data(self):
+        print('getting data')
+        while True:
+            try:
+                #  get and save weather data
+                #  data includes current, forecast, and astronomy
+                c = requests.get("http://api.wunderground.com/api/1a6103aff95a0f09/conditions/q/TX/Austin.json")
+                f = requests.get("http://api.wunderground.com/api/1a6103aff95a0f09/forecast/q/TX/Austin.json")
+                a = requests.get("http://api.wunderground.com/api/1a6103aff95a0f09/astronomy/q/TX/Austin.json")
+                self.current_data = c.json
+                self.for_data = f.json
+                self.astro_data = a.json
+                self.logged_data = True
 
-        #  get and save weather data
-        #  data includes current, forecast, and astronomy
-        c = requests.get("http://api.wunderground.com/api/1a6103aff95a0f09/conditions/q/TX/Austin.json")
-        f = requests.get("http://api.wunderground.com/api/1a6103aff95a0f09/forecast/q/TX/Austin.json")
-        a = requests.get("http://api.wunderground.com/api/1a6103aff95a0f09/astronomy/q/TX/Austin.json")
-        self.current_data = c.json
-        self.for_data = f.json
-        self.astro_data = a.json
-        self.logged_data = True
+        #  ################################################################################################################### #
 
-#  ################################################################################################################### #
+                #  Current Data Labels
 
-        #  Current Data Labels
-
-        #  Current Temp
-        self.b.text = str(self.current_data['current_observation']['temp_f']) + 'F'
-        self.i0 = str(self.current_data['current_observation']['icon_url'])
-
-        #  Current conditions description, if statements handel word wrap
-        d_text = 'Conditions: ' + str(self.for_data['forecast']['txt_forecast']['forecastday'][0]['fcttext'])
-        if len(d_text) > 180:
-            self.d.text = d_text[0:60]
-            self.d1.text = d_text[60:120]
-            self.d2.text = d_text[120:180]
-            self.d3.text = d_text[180:]
-        elif len(d_text) > 120:
-            self.d.text = d_text[0:60]
-            self.d1.text = d_text[60:120]
-            self.d2.text = d_text[120:]
-        elif len(d_text) > 60:
-            self.d.text = d_text[0:60]
-            self.d1.text = d_text[60:]
-        else:
-            self.d.text = d_text
+                #  Current Temp
+                self.b.text = str(self.current_data['current_observation']['temp_f']) + 'F'
+                self.i0 = self.current_data['current_observation']['icon_url']
+                with open('images/w_icon.png', 'wb') as f:
+                    f.write(requests.get(self.i0).content)
+                #  Current conditions description, if statements handel word wrap
+                d_text = 'Conditions: ' + str(self.for_data['forecast']['txt_forecast']['forecastday'][0]['fcttext'])
+                if len(d_text) > 180:
+                    self.d.text = d_text[0:60]
+                    self.d1.text = d_text[60:120]
+                    self.d2.text = d_text[120:180]
+                    self.d3.text = d_text[180:]
+                elif len(d_text) > 120:
+                    self.d.text = d_text[0:60]
+                    self.d1.text = d_text[60:120]
+                    self.d2.text = d_text[120:]
+                elif len(d_text) > 60:
+                    self.d.text = d_text[0:60]
+                    self.d1.text = d_text[60:]
+                else:
+                    self.d.text = d_text
 
 
-# #################################################################################################################### #
+        # #################################################################################################################### #
 
-        #  Forecast Data Labels
+                #  Forecast Data Labels
 
-        i = 0
-        for day in self.for_data['forecast']['simpleforecast']['forecastday']:
-            self.day_list[i].text = day['date']['weekday']
-            if i == 0:
-                self.high_list[i].text = day['high']['fahrenheit']
-                self.low_list[i].text = day['low']['fahrenheit']
-                self.pop_list[i].text = str(day['pop'])
-            else:
-                self.high_list[i].text = 'High: ' + str(day['high']['fahrenheit']) + 'F'
-                self.low_list[i].text = 'Low: ' + str(day['low']['fahrenheit']) + 'F'
-                self.pop_list[i].text = 'POP: ' + str(day['pop']) + '%'
-            i += 1
+                i = 0
+                for day in self.for_data['forecast']['simpleforecast']['forecastday']:
+                    self.day_list[i].text = day['date']['weekday']
+                    if i == 0:
+                        self.high_list[i].text = day['high']['fahrenheit']
+                        self.low_list[i].text = day['low']['fahrenheit']
+                        self.pop_list[i].text = str(day['pop'])
+                    else:
+                        self.high_list[i].text = 'High: ' + str(day['high']['fahrenheit']) + 'F'
+                        self.low_list[i].text = 'Low: ' + str(day['low']['fahrenheit']) + 'F'
+                        self.pop_list[i].text = 'POP: ' + str(day['pop']) + '%'
+                    i += 1
 
-        self.c.text = self.high_list[0].text + 'F / ' + self.low_list[0].text + 'F'
-        self.e.text = 'Chance of Precipitation: ' + self.pop_list[0].text + '%'
-        self.e1.text = 'Avg Wind Speed: ' + str(self.for_data['forecast']['simpleforecast']['forecastday'][0]['avewind']['mph']) + 'mph'
-        self.e2.text = 'Avg Humidity: ' + str(self.for_data['forecast']['simpleforecast']['forecastday'][0]['avehumidity'])
+                self.c.text = self.high_list[0].text + 'F / ' + self.low_list[0].text + 'F'
+                self.e.text = 'Chance of Precipitation: ' + self.pop_list[0].text + '%'
+                self.e1.text = 'Avg Wind Speed: ' + str(self.for_data['forecast']['simpleforecast']['forecastday'][0]['avewind']['mph']) + 'mph'
+                self.e2.text = 'Avg Humidity: ' + str(self.for_data['forecast']['simpleforecast']['forecastday'][0]['avehumidity'])
 
-# #################################################################################################################### #
+        # #################################################################################################################### #
 
-        #  Astronomy Labels
+                #  Astronomy Labels
 
-        self.f.text = 'Rise: ' + str(self.astro_data['sun_phase']['sunrise']['hour']) + ':' + \
-                                str(self.astro_data['sun_phase']['sunrise']['minute'])
-        self.g.text = 'Set: ' + str(self.astro_data['sun_phase']['sunset']['hour']) + ':' + \
-                                str(self.astro_data['sun_phase']['sunset']['minute'])
-        self.h.text = 'Rise: ' + str(self.astro_data['moon_phase']['moonrise']['hour']) + ':' + \
-                                str(self.astro_data['moon_phase']['moonrise']['minute'])
-        self.i.text = 'Set: ' + str(self.astro_data['moon_phase']['moonset']['hour']) + ':' + \
-                                str(self.astro_data['moon_phase']['moonset']['minute'])
-        self.current_time = str(self.astro_data['moon_phase']['current_time']['hour']) + ':' + \
-                            str(self.astro_data['moon_phase']['current_time']['minute'])
-        sun_range = abs(int(self.astro_data['sun_phase']['sunset']['hour']) +
-                            int(self.astro_data['sun_phase']['sunset']['minute']) / 60 -
-                            int(self.astro_data['sun_phase']['sunrise']['hour']) -
-                            int(self.astro_data['sun_phase']['sunrise']['minute']) / 60)
-        self.l.text = 'Length of Day: ' + str(round(sun_range, 2)) + 'hrs'
-        self.m.text = 'Phase of Moon: ' + str(self.astro_data['moon_phase']['phaseofMoon'])
+                self.f.text = 'Rise: ' + str(self.astro_data['sun_phase']['sunrise']['hour']) + ':' + \
+                                        str(self.astro_data['sun_phase']['sunrise']['minute'])
+                self.g.text = 'Set: ' + str(self.astro_data['sun_phase']['sunset']['hour']) + ':' + \
+                                        str(self.astro_data['sun_phase']['sunset']['minute'])
+                self.h.text = 'Rise: ' + str(self.astro_data['moon_phase']['moonrise']['hour']) + ':' + \
+                                        str(self.astro_data['moon_phase']['moonrise']['minute'])
+                self.i.text = 'Set: ' + str(self.astro_data['moon_phase']['moonset']['hour']) + ':' + \
+                                        str(self.astro_data['moon_phase']['moonset']['minute'])
+                self.current_time = str(self.astro_data['moon_phase']['current_time']['hour']) + ':' + \
+                                    str(self.astro_data['moon_phase']['current_time']['minute'])
+                sun_range = abs(int(self.astro_data['sun_phase']['sunset']['hour']) +
+                                    int(self.astro_data['sun_phase']['sunset']['minute']) / 60 -
+                                    int(self.astro_data['sun_phase']['sunrise']['hour']) -
+                                    int(self.astro_data['sun_phase']['sunrise']['minute']) / 60)
+                self.l.text = 'Length of Day: ' + str(round(sun_range, 2)) + 'hrs'
+                self.m.text = 'Phase of Moon: ' + str(self.astro_data['moon_phase']['phaseofMoon'])
+                break
+            except ConnectionError:
+                self.error = True
+                break
 
     def get_time_date(self):
         now = datetime.datetime.now()
@@ -223,7 +231,7 @@ class WeatherScreen(Screen):
             Rectangle(pos=(col_sp/32 + self.b.texture.size[0]/2 - self.c.texture.size[0]/2, y_list[4] + row_sp/2),
                       texture=self.c.texture,
                       size=self.c.texture.size)
-            Rectangle(pos=(x_list[1] + col_sp/2, y_list[4] + 7*row_sp/12), image=self.i0, size=(75,75))
+            Rectangle(pos=(x_list[1] + col_sp/2, y_list[4] + 7*row_sp/12), source='images/w_icon.png', size=(75,75))
 
             if self.d3.text != 'text':
                 Rectangle(pos=(x_list[2] + col_sp/2, y_list[5]), texture=self.d.texture, size=self.d.texture.size)
@@ -292,7 +300,7 @@ class WeatherScreen(Screen):
             if moon_pct < 1:
                 Color(.2, .2, .9)
                 Line(points=(3*col_sp*moon_pct, y_list[3] - row_sp/2 + row_sp/8, 3*col_sp*moon_pct, y_list[3] - row_sp/2 - row_sp/8), width=1.5)
-                Color(1, 1, 1)
+            Color(1, 1, 1)
             Rectangle(pos=(x_list[4] - col_sp/4, y_list[3] + row_sp/4 - 10), texture=self.l.texture, size=self.l.texture.size)
             Rectangle(pos=(x_list[4] - col_sp/4, y_list[3] - row_sp/2 - 10), texture=self.m.texture, size=self.m.texture.size)
 
@@ -303,7 +311,7 @@ class WeatherScreen(Screen):
                 Rectangle(pos=(col_sp/32 + 1*col_sp*(i-1), y_list[1] - row_sp/4 - self.low_list[i].texture.size[1]*2), texture=self.pop_list[i].texture, size=self.pop_list[i].texture.size)
 
             self.date_rect = Rectangle(pos=(x_list[3] + col_sp/2, y_list[1] + row_sp/6), texture=self.n.texture, size=self.n.texture.size)
-            self.time_rect = Rectangle(pos=(x_list[3] + col_sp/2, y_list[1] - self.o.texture.size[1]), texture=self.o.texture, size=self.o.texture.size)
+            self.time_rect = Rectangle(pos=(self.date_rect.pos[0] + (self.n.texture.size[0] - self.o.texture.size[0])/2, y_list[1] - self.o.texture.size[1]), texture=self.o.texture, size=self.o.texture.size)
 
     def dynamic_draw(self):
         self.date_rect.texture = self.n.texture
@@ -312,21 +320,30 @@ class WeatherScreen(Screen):
         self.time_rect.size = self.o.texture.size
 
     def update(self, new_input, input_list):
-        self.get_time_date()
-        if self.logged_data:
-            if self.call_draw:
-                self.static_draw(new_input, input_list)
-                self.call_draw = False
-            self.dynamic_draw()
-        if self.new_screen:
-            self.get_data()
-            self.logged_data = True
-            self.new_screen = False
+        if not self.error:
+            self.get_time_date()
+            print('A')
+            if self.logged_data:
+                if self.call_draw:
+                    self.static_draw(new_input, input_list)
+                    self.call_draw = False
+                self.dynamic_draw()
+            if self.new_screen:
+                print('B')
+                self.get_data()
+                self.logged_data = True
+                self.new_screen = False
+        else:
+            self.add_widget(Label(text='Failed to Fetch Data'))
+
+        print('C')
         if new_input:
             if input_list[3] == 1:
                 self.logged_data = False
                 self.new_screen = True
                 self.call_draw = True
+                print('end weather update')
                 return [1, 'menu']
+        print('end weather update')
         return [0, 'weather']
 
